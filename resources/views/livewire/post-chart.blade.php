@@ -1,7 +1,7 @@
 <div>
     <canvas id="postChart" width="400" height="200"></canvas>
 
-    <script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js">
         document.addEventListener('DOMContentLoaded', function () {
             const ctx = document.getElementById('postChart').getContext('2d');
             new Chart(ctx, {
