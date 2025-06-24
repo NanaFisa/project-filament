@@ -2,9 +2,9 @@
     @foreach ($getRecord()->categories as $category)
         <li>
             <strong>{{ $category->name }}</strong>
-            @if ($category->childCategories->isNotEmpty())
+            @if ($category->activities->isNotEmpty())
                <ul>
-                @foreach ($category->childCategories as $child)
+                @foreach ($category->activities as $child)
                 <li>{{ $child->name }}</li>
                 @endforeach</ul> 
             @endif

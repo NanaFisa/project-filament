@@ -25,8 +25,8 @@ class CategoriesRelationManager extends RelationManager
                     ->maxLength(255)
                     ->label('Category Name'),
 
-                    Repeater::make('childCategories')
-                    ->relationship()
+                    Repeater::make('activities')
+                    ->relationship('activities')
                     ->schema([
                         TextInput::make('name')
                         ->label('Child Category Name')

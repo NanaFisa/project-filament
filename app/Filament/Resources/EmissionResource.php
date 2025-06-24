@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\{Grid, Select, TextInput, Repeater, Section, Group, Placeholder};
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 
@@ -31,14 +32,11 @@ class EmissionResource extends Resource
                         Section::make('Basic Information')
                             ->description('Enter the basic emission details')
                             ->schema([
-                                Select::make('scope')
+                                Select::make('scope_id')
                                     ->label('Scope')
-                                    ->options([
-                                        'scope_1' => 'Scope 1',
-                                        'scope_2' => 'Scope 2',
-                                        'scope_3' => 'Scope 3',
-                                    ])
+                                    ->relationship('scope', 'name')
                                     ->required()
+                                    ->preload()
                                     ->columnSpanFull(),
                             ]),
 
@@ -55,17 +53,17 @@ class EmissionResource extends Resource
                                             ->columnSpanFull(),
 
                                         Group::make()
-                                            ->label('Child Categories')
+                                            ->label('Activities')
                                             ->schema([
-                                                Repeater::make('childCategories')
-                                                    ->relationship('childCategories')
+                                                Repeater::make('activities')
+                                                    ->relationship('activities')
                                                     ->schema([
                                                         TextInput::make('name')
-                                                            ->label('Child Category Name')
+                                                            ->label('Activity Name')
                                                             ->columnSpanFull(),
                                                     ])
                                                     ->dehydrated(fn($state) => filled($state['name'] ?? null))
-                                                    ->addActionLabel('Add Child Category')
+                                                    ->addActionLabel('Add Activity')
                                                     ->columns(1),
                                             ]),
                                     ])
@@ -96,7 +94,7 @@ class EmissionResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('scope')
+                TextColumn::make('scope.name')
                     ->label('Scope')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
@@ -105,21 +103,17 @@ class EmissionResource extends Resource
                         'scope_3' => 'success',
                         default => 'gray',
                     })
-                    ->sortable(),
-
-                // TextColumn::make('created_at')
-                //     ->label('Created')
-                //     ->dateTime('d M Y, H:i')
-                //     ->sortable(),
+                    ->sortable()
+                    ->badge(),
 
                 TextColumn::make('categories_count')
                     ->counts('categories')
                     ->label('Categories')
                     ->sortable(),
 
-                TextColumn::make('child_categories_count')
+                TextColumn::make('activity_count')
                     ->label('Sub-Categories')
-                    ->getStateUsing(fn($record) => $record->categories->flatMap->childCategories->count())
+                    ->getStateUsing(fn($record) => $record->categories->flatMap->activities->count())
                     ->sortable(),
 
                 TextColumn::make('categories_list')
@@ -129,15 +123,16 @@ class EmissionResource extends Resource
                     ->tooltip(fn($record) => $record->categories->pluck('name')->implode(', ')),
             ])
             ->filters([
-                // Tables\Filters\SelectFilter::make('scope')
-                //     ->options([
-                //         'scope_1' => 'Scope 1',
-                //         'scope_2' => 'Scope 2',
-                //         'scope_3' => 'Scope 3',
-                //     ])
-                //     ->label('Filter by Scope'),
             ])
             ->actions([
+                Action::make('preview')
+                ->label('Preview')
+                ->icon('heroicon-o-eye')
+                ->modalheading('Preview Emission Record')
+                ->modalButton('Close')
+                ->modalContent(fn ($record) => view('filament.resources.emission-resource.preview', [
+                    'record' => $record,
+                ])),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
@@ -172,40 +167,109 @@ class EmissionResource extends Resource
     public static function getScopeFormSchema(): array
     {
         return [
-            Select::make('scope')
+            Select::make('scope_id')
                 ->label('Scope')
-                ->options([
-                    'scope_1' => 'Scope 1',
-                    'scope_2' => 'Scope 2',
-                    'scope_3' => 'Scope 3',
-                ])
+                ->relationship('scope', 'name')
+                ->preload()
+                ->searchable()
                 ->required(),
         ];
     }
 
 
-    public static function getCategoriesFormSchema(): array
-    {
-        return [
-            Repeater::make('categories')
-                ->relationship('categories')
-                ->label('Main Categories')
-                ->schema([
-                    TextInput::make('name')
-                        ->label('Category Name')
-                        ->required(),
+    // public static function getCategoriesFormSchema(): array
+    // {
+    //     return [
+    //             TextInput::make('category.name')
+    //                     ->label('Category Name')
+    //                     ->required(),
 
-                    Repeater::make('childCategories')
-                        ->relationship('childCategories')
-                        ->schema([
-                            TextInput::make('name')
-                                ->label('Child Category Name'),
-                        ])
-                        ->addActionLabel('Add Child Category')
-                        ->columns(1),
-                ])
-                ->addActionLabel('Add Main Category')
-                ->columns(1),
-        ];
-    }
+    //             Section::make('Activity Deatils')
+    //             ->schema([
+    //             TextInput::make('activity.name')
+    //                             ->label('Activity Category Name'),
+
+    //             TextInput::make('activity.type')
+    //                 ->label('Type')
+    //                 ->required(),
+
+    //             TextInput::make('activity.unit')
+    //                 ->label('Unit')
+    //                 ->required(),
+
+    //             TextInput::make('activity.emission_factor')
+    //                 ->label('Emission Factor')
+    //                 ->numeric()
+    //                 ->required(),
+
+    //             TextInput::make('activity.source')
+    //                 ->label('Source'),
+
+    //             TextInput::make('activity.year')
+    //                 ->label('Year')
+    //                 ->numeric()
+    //                 ->minValue(1900)
+    //                 ->maxValue(date('Y')),
+
+    //         ])
+    //     ];
+    // }
+    public static function getCategoriesFormSchema(): array
+{
+    return [
+        Repeater::make('categories')
+            ->relationship('categories')
+            ->label('Main Categories')
+            ->schema([
+                TextInput::make('name')
+                    ->label('Category Name')
+                    ->required(),
+
+                TextInput::make('description')
+                    ->label('Description')
+                    ->nullable(),
+
+                Repeater::make('activities')
+                    ->relationship('activities')
+                    ->label('Activity Details')
+                    ->schema([
+                        TextInput::make('name')
+                            ->label('Activity Name')
+                            ->required(),
+
+                        TextInput::make('type')
+                            ->label('Type')
+                            ->nullable(),
+
+                        TextInput::make('unit')
+                            ->label('Unit')
+                            ->nullable(),
+
+                        TextInput::make('emission_factor')
+                            ->label('Emission Factor')
+                            ->numeric()
+                            ->step(0.0001)
+                            ->nullable(),
+
+                        TextInput::make('source')
+                            ->label('Source')
+                            ->nullable(),
+
+                        TextInput::make('year')
+                            ->label('Year')
+                            ->numeric()
+                            ->minValue(2000)
+                            ->maxValue(now()->year)
+                            ->nullable(),
+                    ])
+                    ->addActionLabel('Add Activity')
+                    ->columns(2)
+                    ->maxItems(1)
+            ])
+            ->addActionLabel('Add Category')
+            ->columns(1)
+            ->maxItems(1),
+    ];
+}
+
 }

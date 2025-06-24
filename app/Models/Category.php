@@ -12,7 +12,7 @@ class Category extends Model
         return $this->belongsTo(Emission::class);
     }
 
-    public function childCategories() {
-        return $this->hasMany(ChildCategory::class);
+    public function activities() {
+        return $this->hasMany(Activity::class);
     }
 }

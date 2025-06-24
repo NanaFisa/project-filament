@@ -17,6 +17,4 @@ class EditEmission extends EditRecord
         ];
     }
 
-    //public static string $view = 'filament.resources.emission-resource.pages.custom-create-emission';
-
 }

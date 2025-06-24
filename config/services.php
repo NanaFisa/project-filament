@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'graphql' => [
+      'url' => env('GRAPHQL_API_URL'),
+    ]
+
 ];

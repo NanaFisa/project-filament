@@ -15,6 +15,11 @@ class Emission extends Model
     }
 
     public static function getEloquentQuery(): Builder {
-        return parent::getEloquentQuery()->with(['categories.childCategories']);
+        return parent::getEloquentQuery()->with(['categories.activities']);
+    }
+
+    #relation db
+    public function scope() {
+        return $this->belongsTo(Scope::class);
     }
 }
